@@ -1,0 +1,67 @@
+{
+  "expenses": [
+    {
+      "id": "December-2017",
+      "expenses": [
+        {
+          "id": "agua",
+          "expense": 30
+        },
+        {
+          "id": "luz",
+          "expense": 60
+        },
+        {
+          "id": "gas",
+          "expense": 100
+        },
+        {
+          "id": "comunidad",
+          "expense": 125
+        }
+      ]
+    },
+    {
+      "id": "January-2018",
+      "expenses": [
+        {
+          "id": "agua",
+          "expense": 25
+        },
+        {
+          "id": "luz",
+          "expense": 65
+        },
+        {
+          "id": "gas",
+          "expense": 120
+        },
+        {
+          "id": "comunidad",
+          "expense": 125
+        }
+      ]
+    },
+    {
+      "id": "FEBRUARY-2018",
+      "expenses": [
+        {
+          "id": "agua",
+          "expense": "33"
+        },
+        {
+          "id": "luz",
+          "expense": "33"
+        },
+        {
+          "id": "gas",
+          "expense": "33"
+        },
+        {
+          "id": "comunidad",
+          "expense": "22"
+        }
+      ]
+    }
+  ]
+}

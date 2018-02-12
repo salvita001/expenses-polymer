@@ -1,0 +1,229 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/polymer/lib/elements/dom-repeat.html">
+<link rel="import" href="../bower_components/promise-polyfill/promise-polyfill-lite.html">
+<link rel="import" href="../bower_components/promise-polyfill/promise-polyfill.html">
+<link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="expenses-view">
+  <template>
+    <style include="shared-styles">
+      :host {
+        display: block;
+        padding: 10px;
+      }
+      paper-input {
+        max-width: 200px;
+      }
+      .expenses-field{
+        float: left;
+        margin-left: 50px;
+      }
+      .resume-expenses-field{
+        float: left;
+        margin-left: 100px;
+      }
+      .summary-value{
+        display: block;
+        margin-bottom: 15px;
+      }
+      .summary-div{
+        margin-top: 45px;
+      }
+      .total-summary-month{
+        border-top: 1px solid rgb(163, 159, 159)
+      }
+      .last{
+        background-color: yellow;
+      }
+      .button-save{
+        display: block;
+        width: 160px;
+        height: 40px;
+        margin: 10px auto auto;
+        cursor: pointer;
+        font-size: 15px;
+        color: #0d3069;
+        border-radius: 5px;
+      }
+      .spinner-container{
+        left: 44%;
+        top: 10px;
+        position: relative;
+      }
+    </style>
+    <iron-ajax url="http://localhost:3000/expenses" 
+      auto handle-as="json" 
+      method="GET"
+      last-response="{{ajaxResponse}}">
+    </iron-ajax>
+    <iron-ajax
+      id="saveExpenses"
+      url="http://localhost:3000/expenses"
+      handle-as="json"
+      loading="{{cargando}}"
+      method="POST"
+      content-type="application/json"
+      on-response="respuestaRecibida"
+      on-error="errorRecibido"
+    ></iron-ajax>
+    <h1>Expenses View</h1>
+    <div>
+      <div class="card expenses-field">
+          <h3>Monthly expenses</h3>
+          <span value="{{propMonth.month}}">[[propMonth.month]]</span>
+          <paper-input label="Agua" type="numer" auto-validate allowed-pattern="[0-9]" maxlength="10" value="{{propMonth.agua}}">
+            <div slot="suffix">€/mes</div>
+          </paper-input>
+          <paper-input label="Luz" type="numer" auto-validate allowed-pattern="[0-9]" maxlength="10" value="{{propMonth.luz}}">
+            <div slot="suffix">€/mes</div>
+          </paper-input>
+          <paper-input label="Gas" type="numer" auto-validate allowed-pattern="[0-9]" maxlength="10" value="{{propMonth.gas}}">
+            <div slot="suffix">€/mes</div>
+          </paper-input>
+          <paper-input label="Comunidad" type="numer" auto-validate allowed-pattern="[0-9]" maxlength="10" value="{{propMonth.comunidad}}">
+            <div slot="suffix">€/mes</div>
+          </paper-input>
+          <span class="last">Total Currently Month: [[summaryCurrentMonth]] €/mes</span>
+          <button id="buttonSave" class="button-save" on-click="saveExpensesDates">Save expenses</button>
+          <div class="spinner-container"><paper-spinner alt="Saving expenses" active="[[cargando]]"></paper-spinner></div>
+      </div>
+      <div class="card resume-expenses-field">
+          <h3>Last Months Expenses Summary</h3>
+          <div class="summary-div">
+            <template is="dom-repeat" items="[[ajaxResponse]]">
+                <h4>[[item.period]]</h4>
+                <span class="summary-value">Agua: [[item.expenses.0.expense]] €/mes</span>
+                <span class="summary-value">Luz: [[item.expenses.1.expense]] €/mes</span>
+                <span class="summary-value">Gas: [[item.expenses.2.expense]] €/mes</span>
+                <span class="summary-value">Comunidad: [[item.expenses.3.expense]] €/mes</span>
+                <span class="last">[[item.period]] Total: [[totalSummayLastMonth(item.expenses)]] €/mes</span>
+            </template>
+          </div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    class ExpensesView extends Polymer.Element {
+      static get is() { return 'expenses-view'; }
+      static get properties() {
+        return {
+          propMonth:{
+            type: Object,
+            value: function() { 
+              return {
+                month: this.getMonth(parseInt(this.getCurrentMonthDate()[1])).toUpperCase() + '-' + this.getCurrentMonthDate()[2],
+                agua: '',
+                luz: '',
+                gas: '',
+                comunidad: ''
+              }
+            }
+          },
+          summaryCurrentMonth: String,
+            ajaxResponse: {
+              type: Array,
+              value: function () {
+                return [];
+              }
+            }
+        }
+      }
+      static get observers() {
+        return [
+          'totalSummayCurrentlyMonth(propMonth.agua, propMonth.luz, propMonth.gas, propMonth.comunidad)'
+        ];
+      }
+      getCurrentMonthDate (){
+        let currentDate = new Date(),
+          separateDate = [];
+        currentDate = currentDate.toLocaleDateString();//"2/2/2018";
+        separateDate = currentDate.split("/");
+        return separateDate;
+      }
+      totalSummayLastMonth(expenses) {
+        let sumTotal = 0.00;
+        expenses.forEach(function(item) {
+          parseFloat(item.expense);
+          sumTotal = sumTotal + parseFloat(item.expense);
+        });
+        return sumTotal.toString();
+      }
+      getMonth (currentMonth){
+        let month = new Array(),
+          monthWord;
+        month[1] = "January";
+        month[2] = "February";
+        month[3] = "March";
+        month[4] = "April";
+        month[5] = "May";
+        month[6] = "June";
+        month[7] = "July";
+        month[8] = "August";
+        month[9] = "September";
+        month[10] = "October";
+        month[11] = "November";
+        month[12] = "December";
+        return month[currentMonth];
+      }
+      totalSummayCurrentlyMonth(agua, luz, gas, comunidad) {
+        agua = agua || 0;
+        luz = luz || 0;
+        gas = gas || 0;
+        comunidad = comunidad || 0;
+        this.summaryCurrentMonth = (parseFloat(agua) + parseFloat(luz) + parseFloat(gas) + parseFloat(comunidad)).toString(); 
+      }
+      saveExpensesDates () {
+        //this.$.buttonSave.hide();
+        this.$.saveExpenses.body = this.expensesSavedFunc();
+        this.$.saveExpenses.generateRequest();
+      }
+      respuestaRecibida(e, request) {
+        //el parámetro "request" es el iron-request de esta solicitud
+        console.log(request.response)
+      }
+      errorRecibido(e, error) {
+        console.log(error.request); //ese es el iron-request de la solicitud
+        this.mensaje = 'Error en la solicitud, con código ' + error.request.status;
+      }
+      expensesSavedFunc(){        
+        let jsonExpenses = {
+          "id": this.propMonth.month,
+          "expenses": [{
+              "id": "agua",
+              "expense": this.propMonth.agua
+            },
+            {
+              "id": "luz",
+              "expense": this.propMonth.luz
+            },
+            {
+              "id": "gas",
+              "expense": this.propMonth.gas
+            },
+            {
+              "id": "comunidad",
+              "expense": this.propMonth.comunidad
+            }
+          ]
+        };
+        return jsonExpenses;
+      }
+    }
+
+    window.customElements.define(ExpensesView.is, ExpensesView);
+  </script>
+</dom-module>
