@@ -1,7 +1,7 @@
 {
-  "name": "My App",
-  "short_name": "My App",
-  "description": "My App description",
+  "name": "Expenses App",
+  "short_name": "Expenses App",
+  "description": "Expenses control app",
   "icons": [
     {
       "src": "images/manifest/icon-192x192.png",
