@@ -1,0 +1,69 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="current-date">
+  <template>
+    <style include="shared-styles">
+      :host {
+        display: block;
+      }
+    </style>
+    <span value="{{currentMonth}}">[[currentMonth]]</span>
+  </template>
+
+  <script>
+    class currentDate extends Polymer.Element {
+        static get is() { return 'current-date'; }
+        static get properties() {
+            return {
+                currentMonth:{
+                    type: String,
+                    value: ''
+                }
+            }
+        }
+
+        ready() {
+            super.ready();
+            this.currentMonth = this.getMonth(parseInt(this.getCurrentMonthDate()[1])).toUpperCase() + '-' + this.getCurrentMonthDate()[2];
+        }
+    
+        getCurrentMonthDate (){
+            let currentDate = new Date(),
+                separateDate = [];
+            currentDate = currentDate.toLocaleDateString();//"2(dia)/2(mes)/2018(año)";
+            separateDate = currentDate.split("/");
+            return separateDate;
+        }
+
+        getMonth (currentMonth){
+            let month = new Array(),
+                monthWord;
+            month[1] = "January";
+            month[2] = "February";
+            month[3] = "March";
+            month[4] = "April";
+            month[5] = "May";
+            month[6] = "June";
+            month[7] = "July";
+            month[8] = "August";
+            month[9] = "September";
+            month[10] = "October";
+            month[11] = "November";
+            month[12] = "December";
+            return month[currentMonth];
+        }
+    }
+    window.customElements.define(currentDate.is, currentDate);
+  </script>
+</dom-module>

@@ -9,6 +9,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 -->
 
 <link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="current-date.html">
 <link rel="import" href="shared-styles.html">
 
 <dom-module id="incomes-view">
@@ -16,22 +17,48 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <style include="shared-styles">
       :host {
         display: block;
-
-        padding: 10px;
+      }
+      .income-style{
+        width: 25%;
       }
     </style>
 
-    <div class="card">
-      <div class="circle">1</div>
-      <h1>Incomes View</h1>
-      <p>Ut labores minimum atomorum pro. Laudem tibique ut has.</p>
-      <p>Lorem ipsum dolor sit amet, per in nusquam nominavi periculis, sit elit oportere ea.Lorem ipsum dolor sit amet, per in nusquam nominavi periculis, sit elit oportere ea.Cu mei vide viris gloriatur, at populo eripuit sit.</p>
+    <div class="card income-style">
+        <h3>Monthly Incomes</h3>
+        <current-date></current-date>
+        <paper-input label="salary_1" type="numer" auto-validate allowed-pattern="[0-9]" maxlength="10" value="{{propMonthSalary.salary_1}}">
+          <div slot="suffix">€/mes</div>
+        </paper-input>
+        <paper-input label="salary_2" type="numer" auto-validate allowed-pattern="[0-9]" maxlength="10" value="{{propMonthSalary.salary_2}}">
+          <div slot="suffix">€/mes</div>
+        </paper-input>
+        <paper-input label="football_salary" type="numer" auto-validate allowed-pattern="[0-9]" maxlength="10" value="{{propMonthSalary.football_salary}}">
+            <div slot="suffix">€/mes</div>
+        </paper-input>
+        <paper-input label="home_rent" type="numer" auto-validate allowed-pattern="[0-9]" maxlength="10" value="{{propMonthSalary.lhome_rent}}">
+            <div slot="suffix">€/mes</div>
+        </paper-input>
     </div>
   </template>
 
   <script>
     class IncomesView extends Polymer.Element {
       static get is() { return 'incomes-view'; }
+      static get properties() {
+        return {
+          propMonthSalary:{
+            type: Object,
+            value: () => {
+              return {
+                salary_1: '',
+                salary_2: '',
+                football_salary: '',
+                home_rent: ''
+              }
+            }
+          }
+        }
+      }
     }
 
     window.customElements.define(IncomesView.is, IncomesView);

@@ -133,6 +133,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         };
       }
 
+      ready() {
+          super.ready();
+      }
+
       static get observers() {
         return [
           '_routePageChanged(routeData.page)',

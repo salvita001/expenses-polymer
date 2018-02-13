@@ -15,6 +15,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="../bower_components/promise-polyfill/promise-polyfill-lite.html">
 <link rel="import" href="../bower_components/promise-polyfill/promise-polyfill.html">
 <link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="current-date.html">
 <link rel="import" href="shared-styles.html">
 
 <dom-module id="expenses-view">
@@ -37,7 +38,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       }
       .summary-value{
         display: block;
-        margin-bottom: 15px;
       }
       .summary-div{
         margin-top: 45px;
@@ -63,6 +63,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         top: 10px;
         position: relative;
       }
+      h4{
+        margin-bottom: 5px;
+      }
     </style>
     <iron-ajax url="http://localhost:3000/expenses" 
       auto handle-as="json" 
@@ -82,8 +85,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <h1>Expenses View</h1>
     <div>
       <div class="card expenses-field">
-          <h3>Monthly expenses</h3>
-          <span value="{{propMonth.month}}">[[propMonth.month]]</span>
+          <h3>Monthly Expenses</h3>
+          <current-date></current-date>
           <paper-input label="Agua" type="numer" auto-validate allowed-pattern="[0-9]" maxlength="10" value="{{propMonth.agua}}">
             <div slot="suffix">€/mes</div>
           </paper-input>
@@ -104,7 +107,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           <h3>Last Months Expenses Summary</h3>
           <div class="summary-div">
             <template is="dom-repeat" items="[[ajaxResponse]]">
-                <h4>[[item.period]]</h4>
+                <h4>[[item.id]]</h4>
                 <span class="summary-value">Agua: [[item.expenses.0.expense]] €/mes</span>
                 <span class="summary-value">Luz: [[item.expenses.1.expense]] €/mes</span>
                 <span class="summary-value">Gas: [[item.expenses.2.expense]] €/mes</span>
@@ -119,13 +122,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
   <script>
     class ExpensesView extends Polymer.Element {
       static get is() { return 'expenses-view'; }
+      
       static get properties() {
         return {
           propMonth:{
             type: Object,
-            value: function() { 
+            value: () => {
               return {
-                month: this.getMonth(parseInt(this.getCurrentMonthDate()[1])).toUpperCase() + '-' + this.getCurrentMonthDate()[2],
                 agua: '',
                 luz: '',
                 gas: '',
@@ -136,24 +139,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           summaryCurrentMonth: String,
             ajaxResponse: {
               type: Array,
-              value: function () {
-                return [];
-              }
+              value: () => []
             }
         }
       }
+
       static get observers() {
         return [
           'totalSummayCurrentlyMonth(propMonth.agua, propMonth.luz, propMonth.gas, propMonth.comunidad)'
         ];
       }
-      getCurrentMonthDate (){
-        let currentDate = new Date(),
-          separateDate = [];
-        currentDate = currentDate.toLocaleDateString();//"2/2/2018";
-        separateDate = currentDate.split("/");
-        return separateDate;
-      }
+
       totalSummayLastMonth(expenses) {
         let sumTotal = 0.00;
         expenses.forEach(function(item) {
@@ -162,23 +158,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         });
         return sumTotal.toString();
       }
-      getMonth (currentMonth){
-        let month = new Array(),
-          monthWord;
-        month[1] = "January";
-        month[2] = "February";
-        month[3] = "March";
-        month[4] = "April";
-        month[5] = "May";
-        month[6] = "June";
-        month[7] = "July";
-        month[8] = "August";
-        month[9] = "September";
-        month[10] = "October";
-        month[11] = "November";
-        month[12] = "December";
-        return month[currentMonth];
-      }
+
       totalSummayCurrentlyMonth(agua, luz, gas, comunidad) {
         agua = agua || 0;
         luz = luz || 0;
@@ -186,19 +166,23 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         comunidad = comunidad || 0;
         this.summaryCurrentMonth = (parseFloat(agua) + parseFloat(luz) + parseFloat(gas) + parseFloat(comunidad)).toString(); 
       }
+
       saveExpensesDates () {
         //this.$.buttonSave.hide();
         this.$.saveExpenses.body = this.expensesSavedFunc();
         this.$.saveExpenses.generateRequest();
       }
+
       respuestaRecibida(e, request) {
         //el parámetro "request" es el iron-request de esta solicitud
         console.log(request.response)
       }
+
       errorRecibido(e, error) {
         console.log(error.request); //ese es el iron-request de la solicitud
         this.mensaje = 'Error en la solicitud, con código ' + error.request.status;
       }
+
       expensesSavedFunc(){        
         let jsonExpenses = {
           "id": this.propMonth.month,
@@ -222,6 +206,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         };
         return jsonExpenses;
       }
+
     }
 
     window.customElements.define(ExpensesView.is, ExpensesView);
