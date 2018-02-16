@@ -1,13 +1,3 @@
-<!--
-@license
-Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
-This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
-The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
-The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
-Code distributed by Google as part of the polymer project is also
-subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
--->
-
 <link rel="import" href="../bower_components/polymer/polymer-element.html">
 <link rel="import" href="current-date.html">
 <link rel="import" href="shared-styles.html">
@@ -35,9 +25,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         <paper-input label="football_salary" type="numer" auto-validate allowed-pattern="[0-9]" maxlength="10" value="{{propMonthSalary.football_salary}}">
             <div slot="suffix">€/mes</div>
         </paper-input>
-        <paper-input label="home_rent" type="numer" auto-validate allowed-pattern="[0-9]" maxlength="10" value="{{propMonthSalary.lhome_rent}}">
+        <paper-input label="home_rent" type="numer" auto-validate allowed-pattern="[0-9]" maxlength="10" value="{{propMonthSalary.home_rent}}">
             <div slot="suffix">€/mes</div>
         </paper-input>
+        <span class="last">Total Incomes: [[summaryTotalIncomes]] €</span>
     </div>
   </template>
 
@@ -56,8 +47,27 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 home_rent: ''
               }
             }
-          }
+          },
+          summaryTotalIncomes: String,
+              ajaxResponse: {
+                type: Array,
+                value: () => []
+              }
         }
+      }
+
+      static get observers() {
+        return [
+          'totalIncomes(propMonthSalary.salary_1, propMonthSalary.salary_2, propMonthSalary.football_salary, propMonthSalary.home_rent)'
+        ];
+      }
+
+      totalIncomes(salary_1, salary_2, football_salary, home_rent) {
+        salary_1 = salary_1 || 0;
+        salary_2 = salary_2 || 0;
+        football_salary = football_salary || 0;
+        home_rent = home_rent || 0;
+        this.summaryTotalIncomes = (parseFloat(salary_1) + parseFloat(salary_2) + parseFloat(football_salary) + parseFloat(home_rent)).toString(); 
       }
     }
 

@@ -1,13 +1,3 @@
-<!--
-@license
-Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
-This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
-The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
-The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
-Code distributed by Google as part of the polymer project is also
-subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
--->
-
 <link rel="import" href="../bower_components/polymer/polymer-element.html">
 <link rel="import" href="../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
@@ -15,7 +5,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="../bower_components/promise-polyfill/promise-polyfill-lite.html">
 <link rel="import" href="../bower_components/promise-polyfill/promise-polyfill.html">
 <link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="input-custom.html">
 <link rel="import" href="current-date.html">
+<link rel="import" href="create-expense.html">
 <link rel="import" href="shared-styles.html">
 
 <dom-module id="expenses-view">
@@ -38,15 +30,19 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       }
       .summary-value{
         display: block;
+        margin-bottom: 3px;
       }
       .summary-div{
-        margin-top: 45px;
+        margin-top: 20px;
       }
       .total-summary-month{
         border-top: 1px solid rgb(163, 159, 159)
       }
       .last{
         background-color: yellow;
+        display: block;
+        margin-top: 25px;
+        margin-bottom: 20px;
       }
       .button-save{
         display: block;
@@ -70,6 +66,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <iron-ajax url="http://localhost:3000/expenses" 
       auto handle-as="json" 
       method="GET"
+      on-response="respuestaGet"
+      on-error="errorRecibido"
       last-response="{{ajaxResponse}}">
     </iron-ajax>
     <iron-ajax
@@ -86,19 +84,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <div>
       <div class="card expenses-field">
           <h3>Monthly Expenses</h3>
-          <current-date></current-date>
-          <paper-input label="Agua" type="numer" auto-validate allowed-pattern="[0-9]" maxlength="10" value="{{propMonth.agua}}">
-            <div slot="suffix">€/mes</div>
-          </paper-input>
-          <paper-input label="Luz" type="numer" auto-validate allowed-pattern="[0-9]" maxlength="10" value="{{propMonth.luz}}">
-            <div slot="suffix">€/mes</div>
-          </paper-input>
-          <paper-input label="Gas" type="numer" auto-validate allowed-pattern="[0-9]" maxlength="10" value="{{propMonth.gas}}">
-            <div slot="suffix">€/mes</div>
-          </paper-input>
-          <paper-input label="Comunidad" type="numer" auto-validate allowed-pattern="[0-9]" maxlength="10" value="{{propMonth.comunidad}}">
-            <div slot="suffix">€/mes</div>
-          </paper-input>
+          <current-date id="currentdate"></current-date>
+          <div id="expensesContainer">
+              <template is="dom-repeat" items="[[arrayExpensesLastMonths]]">
+                <paper-input id="{{item.id}}" on-blur="getValueInput" label="{{item.id}}" type="numer" auto-validate allowed-pattern="[0-9]" maxlength="10" value="">
+                  <div slot="suffix">€/mes</div>
+                </paper-input>
+              </template>
+          </div>
+          <create-expense></create-expense>
           <span class="last">Total Currently Month: [[summaryCurrentMonth]] €/mes</span>
           <button id="buttonSave" class="button-save" on-click="saveExpensesDates">Save expenses</button>
           <div class="spinner-container"><paper-spinner alt="Saving expenses" active="[[cargando]]"></paper-spinner></div>
@@ -106,12 +100,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       <div class="card resume-expenses-field">
           <h3>Last Months Expenses Summary</h3>
           <div class="summary-div">
-            <template is="dom-repeat" items="[[ajaxResponse]]">
+            <template is="dom-repeat" items="[[arrayExpenses]]">
                 <h4>[[item.id]]</h4>
-                <span class="summary-value">Agua: [[item.expenses.0.expense]] €/mes</span>
-                <span class="summary-value">Luz: [[item.expenses.1.expense]] €/mes</span>
-                <span class="summary-value">Gas: [[item.expenses.2.expense]] €/mes</span>
-                <span class="summary-value">Comunidad: [[item.expenses.3.expense]] €/mes</span>
+                <template is="dom-repeat" items="[[item.expenses]]">
+                  <span class="summary-value">[[item.id]]: [[item.expense]] €/mes</span>
+                </template>
                 <span class="last">[[item.period]] Total: [[totalSummayLastMonth(item.expenses)]] €/mes</span>
             </template>
           </div>
@@ -125,29 +118,56 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       
       static get properties() {
         return {
-          propMonth:{
-            type: Object,
-            value: () => {
-              return {
-                agua: '',
-                luz: '',
-                gas: '',
-                comunidad: ''
-              }
-            }
+          propInputValue: {
+            type: Number,
+            value: 0
           },
-          summaryCurrentMonth: String,
-            ajaxResponse: {
-              type: Array,
-              value: () => []
-            }
+          summaryCurrentMonth: {
+            type: String,
+            value: ''
+          },
+          arrayExpenses: {
+            type: Array,
+            value: () => []
+          },
+          arrayExpensesLastMonths: {
+            type: Array,
+            value: () => []
+          },
+          arrayExpensesCurrentMonth: {
+            type: Array,
+            value: () => []
+          }        
         }
+      }
+
+      ready() {
+        super.ready();
+        this.currentMonth = this.$.currentdate.currentMonth.toLowerCase();
+        this.addEventListener('event-add-expense', (event) => {
+          this.newExpense = event.detail.name;
+          this.createNewExpenseFuncion();
+          event.preventDefault();
+        });
       }
 
       static get observers() {
         return [
-          'totalSummayCurrentlyMonth(propMonth.agua, propMonth.luz, propMonth.gas, propMonth.comunidad)'
+          'totalSummayCurrentlyMonth(propInputValue)'
         ];
+      }
+
+      createNewExpenseFuncion (){
+        this.inputCustom = document.createElement('input-custom');
+        this.inputCustom.setAttribute('label', this.newExpense);     
+        this.$.expensesContainer.appendChild(this.inputCustom);
+        this.inputCustom.shadowRoot.querySelector('paper-input').label = this.newExpense;
+      }
+
+      getValueInput (e){
+        let expenseId = e.currentTarget.id,
+            expenseValue = e.target.value;
+        this.arrayExpensesCurrentMonth.push({id: expenseId, expense: expenseValue});
       }
 
       totalSummayLastMonth(expenses) {
@@ -159,54 +179,49 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         return sumTotal.toString();
       }
 
-      totalSummayCurrentlyMonth(agua, luz, gas, comunidad) {
-        agua = agua || 0;
-        luz = luz || 0;
-        gas = gas || 0;
-        comunidad = comunidad || 0;
-        this.summaryCurrentMonth = (parseFloat(agua) + parseFloat(luz) + parseFloat(gas) + parseFloat(comunidad)).toString(); 
+      totalSummayCurrentlyMonth(newExpense) {
+        this.summaryCurrentMonth = newExpense;
       }
 
       saveExpensesDates () {
-        //this.$.buttonSave.hide();
-        this.$.saveExpenses.body = this.expensesSavedFunc();
+        let jsonExpenses = {},
+            currentMonth = this.$.currentdate.shadowRoot.querySelector("#currentMonthTitle").value.toLowerCase();
+        jsonExpenses.id = currentMonth;
+        jsonExpenses.expenses = this.arrayExpensesCurrentMonth;
+        this.$.saveExpenses.body = jsonExpenses;
         this.$.saveExpenses.generateRequest();
       }
 
       respuestaRecibida(e, request) {
-        //el parámetro "request" es el iron-request de esta solicitud
-        console.log(request.response)
+        console.log(request.response);
+      }
+      
+      respuestaGet(e, request) {
+        console.log(request.response);
+        this.getUsuallyExpenses (request.response);
+      }
+
+      removeDuplicates (arrayExpenses, prop) {
+          return arrayExpenses.filter((obj, pos, arr) => {
+              return arr.map(mapObj => mapObj[prop]).indexOf(obj[prop]) === pos;
+          });
+      }
+
+      getUsuallyExpenses (request){
+        request.forEach(function(itemExpenses) {
+          itemExpenses.expenses.forEach(function(itemExpense){           
+            this.arrayExpensesLastMonths.push(itemExpense);
+            itemExpense.value = '';
+          }, this);
+        }, this);
+        this.arrayExpensesLastMonths = this.removeDuplicates (this.arrayExpensesLastMonths, 'id');
+        this.arrayExpenses = request;
       }
 
       errorRecibido(e, error) {
         console.log(error.request); //ese es el iron-request de la solicitud
         this.mensaje = 'Error en la solicitud, con código ' + error.request.status;
-      }
-
-      expensesSavedFunc(){        
-        let jsonExpenses = {
-          "id": this.propMonth.month,
-          "expenses": [{
-              "id": "agua",
-              "expense": this.propMonth.agua
-            },
-            {
-              "id": "luz",
-              "expense": this.propMonth.luz
-            },
-            {
-              "id": "gas",
-              "expense": this.propMonth.gas
-            },
-            {
-              "id": "comunidad",
-              "expense": this.propMonth.comunidad
-            }
-          ]
-        };
-        return jsonExpenses;
-      }
-
+      }      
     }
 
     window.customElements.define(ExpensesView.is, ExpensesView);

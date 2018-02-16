@@ -1,0 +1,111 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="create-expense">
+  <template>
+    <style include="shared-styles">
+      :host {
+        display: block;
+      }
+      .expense-container{
+          display: -webkit-box;
+          margin-bottom: 20px;
+      }
+      .second-input{
+        margin-left: 10px;
+        width: 200px;
+      }
+      p.add-expense{
+        display: inline-block;
+        margin: 1px 1px 1px 7px;
+        color:#4285f4;
+        cursor: pointer;
+      }
+      .add-expense-icon{
+        margin-bottom: 4px;
+        cursor: pointer;
+        color: #4285f4;
+      }
+      .icon-add{
+        margin-top: 15px;   
+      }
+      .add-expenses-button{
+          color:#0d3069;
+      }
+      .check-expense{
+        color: green;
+        cursor: pointer;
+        margin: 30px 5px 5px 15px;
+      }
+      .clear-expense{
+        color: rgb(179, 67, 67);
+        cursor: pointer;
+        margin: 31px 5px 5px 0;  
+      }
+    </style>
+        <div hidden$="[[addProp]]" class="icon-add" on-click="addExpense">
+            <iron-icon class="add-expense-icon" icon="icons:add-box"></iron-icon>
+            <p class="add-expense">Add expense</p>
+        </div>
+        <div class="expense-container" hidden$="[[newExpense]]" class$="[[addClassContainer(newExpense)]]">
+            <paper-input id="newExpenseId" label="expense-name">
+            </paper-input> 
+            <iron-icon class="check-expense" title="save" icon="icons:check" on-click="saveExpense"></iron-icon>
+            <iron-icon class="clear-expense" title="clear" icon="icons:clear" on-click="deleteExpense"></iron-icon>
+        </div>
+        
+    </div>    
+  </template>
+
+  <script>
+    class createExpense extends Polymer.Element {
+        static get is() { return 'create-expense'; }
+        static get properties() {
+            return {                
+                newExpense:{
+                    type: Boolean,
+                    value: true
+                },
+                addProp: {
+                    type: Boolean,
+                    value: false  
+                }
+            }
+        }
+
+        ready () {
+            super.ready();
+        }
+
+        addClassContainer (newExpense){
+            return newExpense ? '' : 'expense-container';
+        }
+
+        addExpense (){
+            this.$.newExpenseId.value = '';
+            this.newExpense = !this.newExpense;
+            this.addProp = !this.addProp;
+        }
+
+        saveExpense (){
+            this.newExpense = !this.newExpense;
+            this.addProp = !this.addProp;
+            let event = new CustomEvent('event-add-expense', { 
+                composed: true, 
+                detail: {
+                    name: this.$.newExpenseId.value
+            } 
+            }); 
+            this.dispatchEvent(event);
+        }
+
+        deleteExpense (){
+            this.newExpense =  !this.newExpense;
+            this.addProp = !this.addProp;
+        }
+    }
+    window.customElements.define(createExpense.is, createExpense);
+  </script>
+</dom-module>
