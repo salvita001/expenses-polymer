@@ -145,29 +145,50 @@
         super.ready();
         this.currentMonth = this.$.currentdate.currentMonth.toLowerCase();
         this.addEventListener('event-add-expense', (event) => {
-          this.newExpense = event.detail.name;
+          this.newExpenseLabel = event.detail.label;
+          this.newExpenseValue = event.detail.value;
           this.createNewExpenseFuncion();
           event.preventDefault();
         });
       }
 
-      static get observers() {
-        return [
-          'totalSummayCurrentlyMonth(propInputValue)'
-        ];
+      createNewExpenseFuncion (){
+        this.arrayExpensesLastMonths.push({id: this.newExpenseLabel, expense: this.newExpenseValue, value: ""});
+        let eurosMes = '<div slot="suffix">€/mes</div>';
+        this.inputCustom = document.createElement('paper-input');
+        this.inputCustom.setAttribute('label', this.newExpenseLabel);
+        this.inputCustom.setAttribute('id', this.newExpenseLabel);
+        this.inputCustom.setAttribute('value', this.newExpenseValue);              
+        this.$.expensesContainer.appendChild(this.inputCustom);
+        this.$.expensesContainer.querySelector("#" + this.newExpenseLabel).innerHTML = eurosMes;
+        this.checkCurrentMonth(this.newExpenseLabel, this.newExpenseValue);
       }
 
-      createNewExpenseFuncion (){
-        this.inputCustom = document.createElement('input-custom');
-        this.inputCustom.setAttribute('label', this.newExpense);     
-        this.$.expensesContainer.appendChild(this.inputCustom);
-        this.inputCustom.shadowRoot.querySelector('paper-input').label = this.newExpense;
+      checkCurrentMonth (expenseId, expenseValue){
+        if(this.arrayExpensesCurrentMonth.length > 0){
+          this.arrayExpensesCurrentMonth = this.arrayExpensesCurrentMonth.filter(function (obj) {
+            return obj.id !== expenseId;
+          });
+        }
+        this.arrayExpensesCurrentMonth.push({id: expenseId, expense: expenseValue});
+        this.summaryCurrentMonth = this.sumExpenses(this.arrayExpensesCurrentMonth); 
       }
 
       getValueInput (e){
         let expenseId = e.currentTarget.id,
             expenseValue = e.target.value;
-        this.arrayExpensesCurrentMonth.push({id: expenseId, expense: expenseValue});
+        this.checkCurrentMonth(expenseId, expenseValue);       
+      }
+
+      sumExpenses (expensesArray){
+        let sumTotal = 0;
+        this.summaryCurrentMonth = 0;
+        expensesArray.forEach(function(expense){
+          if(expense.expense != ''){
+            sumTotal = sumTotal + parseFloat(expense.expense);
+          }
+        });
+        return sumTotal;
       }
 
       totalSummayLastMonth(expenses) {
@@ -177,10 +198,6 @@
           sumTotal = sumTotal + parseFloat(item.expense);
         });
         return sumTotal.toString();
-      }
-
-      totalSummayCurrentlyMonth(newExpense) {
-        this.summaryCurrentMonth = newExpense;
       }
 
       saveExpensesDates () {

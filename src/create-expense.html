@@ -44,6 +44,9 @@
         cursor: pointer;
         margin: 31px 5px 5px 0;  
       }
+      #newExpenseIdVal{
+        margin-left: 10px;
+      }
     </style>
         <div hidden$="[[addProp]]" class="icon-add" on-click="addExpense">
             <iron-icon class="add-expense-icon" icon="icons:add-box"></iron-icon>
@@ -51,7 +54,10 @@
         </div>
         <div class="expense-container" hidden$="[[newExpense]]" class$="[[addClassContainer(newExpense)]]">
             <paper-input id="newExpenseId" label="expense-name">
-            </paper-input> 
+            </paper-input>
+            <paper-input id="newExpenseIdVal" allowed-pattern="[0-9]" maxlength="10" label="expense" value="">
+                <div slot="suffix">€/mes</div>
+            </paper-input>
             <iron-icon class="check-expense" title="save" icon="icons:check" on-click="saveExpense"></iron-icon>
             <iron-icon class="clear-expense" title="clear" icon="icons:clear" on-click="deleteExpense"></iron-icon>
         </div>
@@ -85,6 +91,7 @@
 
         addExpense (){
             this.$.newExpenseId.value = '';
+            this.$.newExpenseIdVal.value = '';
             this.newExpense = !this.newExpense;
             this.addProp = !this.addProp;
         }
@@ -95,7 +102,8 @@
             let event = new CustomEvent('event-add-expense', { 
                 composed: true, 
                 detail: {
-                    name: this.$.newExpenseId.value
+                    label: this.$.newExpenseId.value,
+                    value: this.$.newExpenseIdVal.value
             } 
             }); 
             this.dispatchEvent(event);
