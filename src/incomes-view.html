@@ -1,6 +1,8 @@
 <link rel="import" href="../bower_components/polymer/polymer-element.html">
 <link rel="import" href="current-date.html">
 <link rel="import" href="shared-styles.html">
+<link rel="import" href="expenses-view.html">
+<link rel="import" href="create-expense.html">
 
 <dom-module id="incomes-view">
   <template>
@@ -12,7 +14,7 @@
         width: 25%;
       }
     </style>
-
+    <!-- <expenses-view id="trololo"></expenses-view> -->
     <div class="card income-style">
         <h3>Monthly Incomes</h3>
         <current-date></current-date>
@@ -67,6 +69,9 @@
         salary_2 = salary_2 || 0;
         football_salary = football_salary || 0;
         home_rent = home_rent || 0;
+        //CALL FUNCTION FROM ANOTHER COMPONENT
+        // let expensesView = new ExpensesView();
+        // expensesView.sumExpenses();
         this.summaryTotalIncomes = (parseFloat(salary_1) + parseFloat(salary_2) + parseFloat(football_salary) + parseFloat(home_rent)).toString(); 
       }
     }
