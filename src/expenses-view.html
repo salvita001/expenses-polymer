@@ -65,6 +65,12 @@
       .warning-exist{
         color: red;
       }
+      .delete-input-expense{
+        float: right;
+        cursor: pointer;
+        top: -30px;
+        color: rgb(179, 67, 67);
+      }
     </style>
     <iron-ajax url="http://localhost:3000/expenses" 
       auto handle-as="json" 
@@ -92,8 +98,8 @@
               <template is="dom-repeat" items="{{arrayExpensesLastMonths}}">
                 <paper-input type="text" auto-validate id="{{item.id}}" label="{{item.id}}" maxlength="10" value="{{item.expense}}">
                   <div slot="suffix">€/mes</div>
-                  <iron-icon class="clear-expense" title="clear" icon="icons:clear" on-click="deleteExpense"></iron-icon>
                 </paper-input>
+                <iron-icon class="delete-input-expense" id="icon-clear-{{item.id}}" title="clear" icon="icons:clear" on-click="deleteOrigExpense"></iron-icon>
               </template>
           </div>
           <span on-click="deleteWarning" class="warning-exist" hidden$="[[alertExpense]]">The expense !!![[expenseRepeat]]!!! already exists..!!!</span>
@@ -131,19 +137,16 @@
             type: Boolean,
             value: true
           },
-          arrayExpenses: {
-            type: Array,
-            value: () => []
-          },
           arrayExpensesLastMonths: {
             type: Array,
             notify: true,
             value: () => []
           },
-          expenseValue: {
-            type: String,
-            value: ''
-          }  
+          arrayNewExpenses: {
+            type: Array,
+            notify: true,
+            value: () => [] 
+          } 
         }
       }
 
@@ -155,8 +158,7 @@
 
       validateInput (value) {
         //if (value.value.indexOf(',') > 0) { return };
-        this.sumExpenses(value.value);
-        return true;
+        this.sumExpenses();
       }
 
       ready() {
@@ -173,28 +175,73 @@
       createNewExpenseFuncion (){
         let eurosMes = '<div slot="suffix">€/mes</div>';
         this.inputCustom = document.createElement('paper-input');
+        this.ironDeleteSign = document.createElement('iron-icon');
+        //set input attributes
         this.inputCustom.setAttribute('label', this.newExpenseLabel);
         this.inputCustom.setAttribute('id', this.newExpenseLabel);
-        this.inputCustom.setAttribute('value', this.newExpenseValue);              
+        this.inputCustom.setAttribute('value', this.newExpenseValue);
+        this.inputCustom.addEventListener('blur', this.addNewValue.bind(this));
+        //set iron attributes
+        this.ironDeleteSign.setAttribute('class', 'delete-input-expense');
+        this.ironDeleteSign.setAttribute('title', 'clear');
+        this.ironDeleteSign.setAttribute('icon', 'icons:clear');
+        this.ironDeleteSign.setAttribute('id', 'icon-clear-' + this.newExpenseLabel);
+        this.ironDeleteSign.addEventListener('click', this.deleteNewExpense.bind(this));
+
         this.$.expensesContainer.appendChild(this.inputCustom);
+        this.$.expensesContainer.appendChild(this.ironDeleteSign);
         this.$.expensesContainer.querySelector("#" + this.newExpenseLabel).innerHTML = eurosMes;
         this.checkCurrentMonth(this.newExpenseLabel, this.newExpenseValue);
       }
 
+      addNewValue (ev){
+        let id = ev.target.id,
+          newValue = ev.target.__data.value;
+        this.arrayNewExpenses.forEach(function(expense){
+          if(expense.id === id){
+            expense.expense = newValue;
+          }
+        });
+      }     
+
       checkCurrentMonth (expenseId, expenseValue){
         const existExpense = this.arrayExpensesLastMonths.find(expense => expense.id === expenseId.toLowerCase());
         if(!existExpense){
-          this.arrayExpensesLastMonths.push({id: expenseId, expense: expenseValue});
+          this.arrayNewExpenses.push({id: expenseId, expense: expenseValue});
         }else{
           this.expenseRepeat = this.newExpenseLabel.toUpperCase();
           this.inputCustom.remove();
           this.alertExpense = !this.alertExpense;
         }
-        this.summaryCurrentMonth = this.sumExpenses(this.arrayExpensesLastMonths); 
+        this.summaryCurrentMonth = this.sumExpenses(); 
       }
 
       deleteWarning(){
         this.alertExpense = !this.alertExpense;
+      }
+
+      deleteNewExpense(event){
+        let nameId = event.target.id.replace("icon-clear-", '');
+        event.currentTarget.parentElement.querySelector('#' + nameId).remove();
+        event.currentTarget.remove();
+        this.arrayNewExpenses = this.arrayNewExpenses.filter(function(element) {
+            return element.id !== nameId;
+        });
+        this.sumExpenses();
+      }
+
+      deleteOrigExpense(event){
+        let nameId = event.model.__data.item.id;
+        this.updateModelAndView(nameId);
+      }
+
+      updateModelAndView (nameId){
+        this.$.expensesContainer.querySelector('#icon-clear-' + nameId).remove();
+        this.$.expensesContainer.querySelector('#' + nameId).remove();
+        this.arrayNewExpenses = this.arrayNewExpenses.filter(function(element) {
+            return element.id !== nameId;
+        });
+        this.sumExpenses();
       }
 
       getValueInput (e){
@@ -206,10 +253,11 @@
         this.checkCurrentMonth(expenseId, expenseValue);       
       }
 
-      sumExpenses (value){
-        let sumTotal = 0;
+      sumExpenses (){
+        let sumTotal = 0,
+          arrayToCalculate = this.arrayNewExpenses.length > 0 ? this.arrayNewExpenses : this.arrayExpensesLastMonths;
         this.summaryCurrentMonth = 0;
-        this.arrayExpensesLastMonths.forEach(function(expense){
+        arrayToCalculate.forEach(function(expense){
           if(expense.expense != ''){
             sumTotal = sumTotal + parseFloat(expense.expense.replace(/\,/g,'.'));
           }
@@ -231,7 +279,7 @@
         let jsonExpenses = {},
             currentMonth = this.$.currentdate.shadowRoot.querySelector("#currentMonthTitle").value.toLowerCase();
         jsonExpenses.id = currentMonth;
-        jsonExpenses.expenses = this.arrayExpensesLastMonths;
+        jsonExpenses.expenses = this.arrayNewExpenses;
         this.$.saveExpenses.body = jsonExpenses;
         this.$.saveExpenses.generateRequest();
       }
@@ -255,10 +303,10 @@
         request.forEach(function(itemExpenses) {
           itemExpenses.expenses.forEach(function(itemExpense){           
             this.arrayExpensesLastMonths.push(itemExpense);
-            //itemExpense.value = '';
           }, this);
         }, this);
         this.arrayExpensesLastMonths = this.removeDuplicates (this.arrayExpensesLastMonths, 'id');
+        this.arrayNewExpenses = this.arrayExpensesLastMonths;
         this.arrayExpenses = request;
       }
 
