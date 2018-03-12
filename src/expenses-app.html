@@ -77,6 +77,7 @@
         <iron-selector selected="[[page]]" attr-for-selected="name" class="drawer-list" role="navigation">
           <a name="incomes-view" href="[[rootPath]]incomes-view">Incomes view</a>
           <a name="expenses-view" href="[[rootPath]]expenses-view">Expenses view</a>
+          <a name="results-view" href="[[rootPath]]results-view">Results view</a>
         </iron-selector>
       </app-drawer>
 
@@ -97,6 +98,7 @@
             role="main">
           <incomes-view name="incomes-view"></incomes-view>
           <expenses-view name="expenses-view"></expenses-view>
+          <results-view name="results-view"></results-view>
           <error-404-view name="error-404-view"></error-404-view>
         </iron-pages>
       </app-header-layout>

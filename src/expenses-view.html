@@ -26,7 +26,6 @@
       }
       .resume-expenses-field{
         float: left;
-        margin-left: 100px;
       }
       .summary-value{
         display: block;
@@ -68,9 +67,20 @@
       .delete-input-expense{
         float: right;
         cursor: pointer;
-        top: -30px;
+        top: -35px;
         color: rgb(179, 67, 67);
       }
+      .slot-class{
+        margin-right: 21px;
+      }
+      #expensesContainer{
+        width: 255px;
+      }
+      :root {
+          --paper-input-container: {
+              width: 248px;
+        }
+      }      
     </style>
     <iron-ajax url="http://localhost:3000/expenses" 
       auto handle-as="json" 
@@ -96,17 +106,20 @@
           <current-date id="currentdate"></current-date>
           <div id="expensesContainer">
               <template is="dom-repeat" items="{{arrayExpensesLastMonths}}">
-                <paper-input type="text" auto-validate id="{{item.id}}" label="{{item.id}}" maxlength="10" value="{{item.expense}}">
-                  <div slot="suffix">€/mes</div>
+                <paper-input auto-validate allowed-pattern="[0-9\,]" on-keypress="validate" type="text" 
+                  id="{{item.id}}" label="{{item.id}}" maxlength="10" value="{{item.expense}}">
+                  <div class="slot-class" slot="suffix">€/mes</div>
                 </paper-input>
                 <iron-icon class="delete-input-expense" id="icon-clear-{{item.id}}" title="clear" icon="icons:clear" on-click="deleteOrigExpense"></iron-icon>
               </template>
           </div>
           <span on-click="deleteWarning" class="warning-exist" hidden$="[[alertExpense]]">The expense !!![[expenseRepeat]]!!! already exists..!!!</span>
           <create-expense></create-expense>
-          <span class="last">Total Currently Month: [[summaryCurrentMonth]] €/mes</span>
-          <button id="buttonSave" class="button-save" on-click="saveExpensesDates">Save expenses</button>
-          <div class="spinner-container"><paper-spinner alt="Saving expenses" active="[[cargando]]"></paper-spinner></div>
+          <div hidden$="[[showSummary]]">
+              <span class="last">Total Currently Month: [[summaryCurrentMonth]] €/mes</span>
+              <button id="buttonSave" class="button-save" on-click="saveExpensesDates">Save expenses</button>
+              <div class="spinner-container"><paper-spinner alt="Saving expenses" active="[[cargando]]"></paper-spinner></div>
+          </div>          
       </div>
       <div class="card resume-expenses-field">
           <h3>Last Months Expenses Summary</h3>
@@ -137,6 +150,10 @@
             type: Boolean,
             value: true
           },
+          showSummary: {
+            type: Boolean,
+            value: false
+          },
           arrayExpensesLastMonths: {
             type: Array,
             notify: true,
@@ -145,8 +162,8 @@
           arrayNewExpenses: {
             type: Array,
             notify: true,
-            value: () => [] 
-          } 
+            value: () => []
+          }
         }
       }
 
@@ -156,8 +173,19 @@
         ]
       }
 
+      validate (e){
+        let value = e.currentTarget.__data.value,
+          pressedKey = e.key;
+        if(value.indexOf(',') > -1){
+          if(pressedKey === ','){
+            e.preventDefault();
+          }else if(value.split(",").pop().length > 1){
+            e.preventDefault();
+          }
+        }
+      }
+
       validateInput (value) {
-        //if (value.value.indexOf(',') > 0) { return };
         this.sumExpenses();
       }
 
@@ -173,7 +201,7 @@
       }
 
       createNewExpenseFuncion (){
-        let eurosMes = '<div slot="suffix">€/mes</div>';
+        let eurosMes = '<div class="slot-class" slot="suffix">€/mes</div>';
         this.inputCustom = document.createElement('paper-input');
         this.ironDeleteSign = document.createElement('iron-icon');
         //set input attributes
@@ -192,11 +220,15 @@
         this.$.expensesContainer.appendChild(this.ironDeleteSign);
         this.$.expensesContainer.querySelector("#" + this.newExpenseLabel).innerHTML = eurosMes;
         this.checkCurrentMonth(this.newExpenseLabel, this.newExpenseValue);
+        if(this.$.expensesContainer.getElementsByTagName('paper-input').length === 1){
+          this.showSummary = !this.showSummary;
+        }
       }
 
       addNewValue (ev){
         let id = ev.target.id,
           newValue = ev.target.__data.value;
+        this.validateInput(ev);
         this.arrayNewExpenses.forEach(function(expense){
           if(expense.id === id){
             expense.expense = newValue;
@@ -224,20 +256,17 @@
         let nameId = event.target.id.replace("icon-clear-", '');
         event.currentTarget.parentElement.querySelector('#' + nameId).remove();
         event.currentTarget.remove();
-        this.arrayNewExpenses = this.arrayNewExpenses.filter(function(element) {
-            return element.id !== nameId;
-        });
-        this.sumExpenses();
+        this.updateModelAndView(nameId);
       }
 
       deleteOrigExpense(event){
         let nameId = event.model.__data.item.id;
+        this.$.expensesContainer.querySelector('#icon-clear-' + nameId).remove();
+        this.$.expensesContainer.querySelector('#' + nameId).remove();
         this.updateModelAndView(nameId);
       }
 
       updateModelAndView (nameId){
-        this.$.expensesContainer.querySelector('#icon-clear-' + nameId).remove();
-        this.$.expensesContainer.querySelector('#' + nameId).remove();
         this.arrayNewExpenses = this.arrayNewExpenses.filter(function(element) {
             return element.id !== nameId;
         });
@@ -263,6 +292,9 @@
           }
         });
         this.summaryCurrentMonth = sumTotal.toFixed(2).replace(/\./g,',');
+        if(this.$.expensesContainer.getElementsByTagName('paper-input').length === 0){
+          this.showSummary = !this.showSummary;
+        }        
         return this.summaryCurrentMonth;
       }
 
