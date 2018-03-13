@@ -9,29 +9,57 @@
     <style include="shared-styles">
       :host {
         display: block;
+        padding: 10px;
       }
-      .income-style{
-        width: 25%;
+      .incomes-field{
+        float: left;
+        margin-left: 50px;
       }
     </style>
-    <!-- <expenses-view id="trololo"></expenses-view> -->
-    <div class="card income-style">
+    <iron-ajax url="http://localhost:3000/incomes" auto handle-as="json" method="GET" on-response="respuestaGet" 
+      on-error="errorRecibido" last-response="{{ajaxResponse}}">
+    </iron-ajax>
+    <iron-ajax id="saveIncomes" url="http://localhost:3000/incomes" handle-as="json" loading="{{cargando}}" 
+      method="POST" content-type="application/json" on-response="respuestaRecibida" on-error="errorRecibido">
+    </iron-ajax>
+    <h1>Incomes View</h1>
+    <div>
+      <div class="card incomes-field">
         <h3>Monthly Incomes</h3>
-        <current-date></current-date>
-        <paper-input label="salary_1" type="numer" auto-validate allowed-pattern="[0-9]" maxlength="10" value="{{propMonthSalary.salary_1}}">
-          <div slot="suffix">€/mes</div>
-        </paper-input>
-        <paper-input label="salary_2" type="numer" auto-validate allowed-pattern="[0-9]" maxlength="10" value="{{propMonthSalary.salary_2}}">
-          <div slot="suffix">€/mes</div>
-        </paper-input>
-        <paper-input label="football_salary" type="numer" auto-validate allowed-pattern="[0-9]" maxlength="10" value="{{propMonthSalary.football_salary}}">
-            <div slot="suffix">€/mes</div>
-        </paper-input>
-        <paper-input label="home_rent" type="numer" auto-validate allowed-pattern="[0-9]" maxlength="10" value="{{propMonthSalary.home_rent}}">
-            <div slot="suffix">€/mes</div>
-        </paper-input>
-        <span class="last">Total Incomes: [[summaryTotalIncomes]] €</span>
+        <current-date id="currentdate"></current-date>
+        <div id="incomesContainer" class="introDatesContainer">
+          <template is="dom-repeat" items="{{arrayIncomesLastMonths}}">
+            <paper-input auto-validate allowed-pattern="[0-9\,]" on-keypress="validate" type="text" id="{{item.id}}" label="{{item.id}}"
+              maxlength="10" value="{{item.income}}">
+              <div class="slot-class" slot="suffix">€/mes</div>
+            </paper-input>
+            <iron-icon class="delete-input" id="icon-clear-{{item.id}}" title="clear" icon="icons:clear" on-click="deleteOrigIncome"></iron-icon>
+          </template>
+        </div>
+        <span on-click="deleteWarning" class="warning-exist" hidden$="[[alertIncome]]">The income !!![[incomeRepeat]]!!! already exists..!!!</span>
+        <create-expense></create-expense>
+        <div hidden$="[[showSummary]]">
+          <span class="last">Total Currently Incomes: [[summaryTotalIncomes]] €/mes</span>
+          <button id="buttonSave" class="button-save" on-click="saveIncomesDates">Save incomes</button>
+          <div class="spinner-container">
+            <paper-spinner alt="Saving incomes" active="[[cargando]]"></paper-spinner>
+          </div>
+        </div>
+      </div>
+      <div class="card resume-field">
+          <h3>Last Months Incomes Summary</h3>
+          <div class="summary-div">
+            <template is="dom-repeat" items="[[arrayIncomes]]">
+                <h4>[[item.id]]</h4>
+                <template is="dom-repeat" items="[[item.incomes]]">
+                  <span class="summary-value">[[item.id]]: [[item.income]] €/mes</span>
+                </template>
+                <span class="last">[[item.period]] Total: [[totalSummayLastMonth(item.incomes)]] €/mes</span>
+            </template>
+          </div>
+      </div>
     </div>
+      
   </template>
 
   <script>
@@ -39,41 +67,204 @@
       static get is() { return 'incomes-view'; }
       static get properties() {
         return {
-          propMonthSalary:{
-            type: Object,
-            value: () => {
-              return {
-                salary_1: '',
-                salary_2: '',
-                football_salary: '',
-                home_rent: ''
-              }
-            }
+          alertIncome:{
+            type: Boolean,
+            value: true
+          },
+          arrayIncomesLastMonths: {
+            type: Array,
+            notify: true,
+            value: () => []
+          },
+          arrayNewIncomes: {
+            type: Array,
+            notify: true,
+            value: () => []
+          },
+          showSummary: {
+            type: Boolean,
+            value: false
           },
           summaryTotalIncomes: String,
-              ajaxResponse: {
-                type: Array,
-                value: () => []
-              }
+          ajaxResponse: {
+            type: Array,
+            value: () => []
+          }
         }
       }
 
       static get observers() {
         return [
-          'totalIncomes(propMonthSalary.salary_1, propMonthSalary.salary_2, propMonthSalary.football_salary, propMonthSalary.home_rent)'
-        ];
+          'totalIncomes(arrayIncomesLastMonths.*)'
+        ]
       }
 
-      totalIncomes(salary_1, salary_2, football_salary, home_rent) {
-        salary_1 = salary_1 || 0;
-        salary_2 = salary_2 || 0;
-        football_salary = football_salary || 0;
-        home_rent = home_rent || 0;
-        //CALL FUNCTION FROM ANOTHER COMPONENT
-        // let expensesView = new ExpensesView();
-        // expensesView.sumExpenses();
-        this.summaryTotalIncomes = (parseFloat(salary_1) + parseFloat(salary_2) + parseFloat(football_salary) + parseFloat(home_rent)).toString(); 
+      ready() {
+        super.ready();
+        this.currentMonth = this.$.currentdate.currentMonth.toLowerCase();
+        this.addEventListener('event-add-expense', (event) => {
+          this.newIncomeLabel = event.detail.label;
+          this.newIncomeValue = event.detail.value;
+          this.createNewIncomesFuncion();
+          event.preventDefault();
+        });
       }
+
+      validate (e){
+        let value = e.currentTarget.__data.value,
+          pressedKey = e.key;
+        if(value.indexOf(',') > -1){
+          if(pressedKey === ','){
+            e.preventDefault();
+          }else if(value.split(",").pop().length > 1){
+            e.preventDefault();
+          }
+        }
+      }
+
+      saveIncomesDates () {
+        let jsonIncomes = {},
+            currentMonth = this.$.currentdate.shadowRoot.querySelector("#currentMonthTitle").value.toLowerCase();
+        jsonIncomes.id = currentMonth;
+        jsonIncomes.incomes = this.arrayNewIncomes;
+        this.$.saveIncomes.body = jsonIncomes;
+        this.$.saveIncomes.generateRequest();
+      }
+
+      createNewIncomesFuncion (){
+        let eurosMes = '<div class="slot-class" slot="suffix">€/mes</div>';
+        this.inputCustom = document.createElement('paper-input');
+        this.ironDeleteSign = document.createElement('iron-icon');
+        //set input attributes
+        this.inputCustom.setAttribute('label', this.newIncomeLabel);
+        this.inputCustom.setAttribute('id', this.newIncomeLabel);
+        this.inputCustom.setAttribute('value', this.newIncomeValue);
+        this.inputCustom.addEventListener('blur', this.addNewValue.bind(this));
+        //set iron attributes
+        this.ironDeleteSign.setAttribute('class', 'delete-input');
+        this.ironDeleteSign.setAttribute('title', 'clear');
+        this.ironDeleteSign.setAttribute('icon', 'icons:clear');
+        this.ironDeleteSign.setAttribute('id', 'icon-clear-' + this.newIncomeLabel);
+        this.ironDeleteSign.addEventListener('click', this.deleteNewIncome.bind(this));
+
+        this.$.incomesContainer.appendChild(this.inputCustom);
+        this.$.incomesContainer.appendChild(this.ironDeleteSign);
+        this.$.incomesContainer.querySelector("#" + this.newIncomeLabel).innerHTML = eurosMes;
+        this.checkCurrentMonth(this.newIncomeLabel, this.newIncomeValue);
+        if(this.$.incomesContainer.getElementsByTagName('paper-input').length === 1){
+          this.showSummary = !this.showSummary;
+        }
+      }
+
+      addNewValue (ev){
+        let id = ev.target.id,
+          newValue = ev.target.__data.value;
+        this.validateInput(ev);
+        this.arrayNewIncomes.forEach(function(income){
+          if(income.id === id){
+            income.income = newValue;
+          }
+        });
+      }
+
+      deleteNewIncome(event){
+        let nameId = event.target.id.replace("icon-clear-", '');
+        event.currentTarget.parentElement.querySelector('#' + nameId).remove();
+        event.currentTarget.remove();
+        this.updateModelAndView(nameId);
+      }
+
+      updateModelAndView (nameId){
+        this.arrayNewIncomes = this.arrayNewIncomes.filter(function(element) {
+            return element.id !== nameId;
+        });
+        this.sumIncomes();
+      }
+
+      totalIncomes (value) {
+        this.sumIncomes();
+      }
+
+      totalSummayLastMonth(incomes) {
+        let sumTotal = 0.00;
+        incomes.forEach(function(item) {
+          parseFloat(item.income);
+          sumTotal = sumTotal + parseFloat(item.income);
+        });
+        return sumTotal.toString();
+      }
+
+      deleteOrigIncome(event){
+        let nameId = event.model.__data.item.id;
+        this.$.incomesContainer.querySelector('#icon-clear-' + nameId).remove();
+        this.$.incomesContainer.querySelector('#' + nameId).remove();
+        this.updateModelAndView(nameId);
+      }
+
+      checkCurrentMonth (incomeId, incomeValue){
+        const existIncomes = this.arrayIncomesLastMonths.find(income => income.id === incomeId.toLowerCase());
+        if(!existIncomes){
+          this.arrayNewIncomes.push({id: incomeId, income: incomeValue});
+        }else{
+          this.incomeRepeat = this.newIncomeLabel.toUpperCase();
+          this.inputCustom.remove();
+          this.$.incomesContainer.querySelector('#icon-clear-' + incomeId).remove();
+          this.alertIncome = !this.alertIncome;
+        }
+        this.summaryTotalIncomes = this.sumIncomes(); 
+      }
+
+      deleteWarning(){
+        this.alertIncome = !this.alertIncome;
+      }
+
+      sumIncomes (){
+        let sumTotal = 0,
+          arrayToCalculate = this.arrayNewIncomes.length > 0 ? this.arrayNewIncomes : this.arrayIncomesLastMonths;
+        this.summaryTotalIncomes = 0;
+        arrayToCalculate.forEach(function(income){
+          if(income.income != ''){
+            sumTotal = sumTotal + parseFloat(income.income.replace(/\,/g,'.'));
+          }
+        });
+        this.summaryTotalIncomes = sumTotal.toFixed(2).replace(/\./g,',');
+        if(this.$.incomesContainer.getElementsByTagName('paper-input').length === 0){
+          this.showSummary = !this.showSummary;
+        }        
+        return this.summaryTotalIncomes;
+      }
+
+      respuestaGet(e, request) {
+        console.log(request.response);
+        this.getUsuallyIncomes (request.response);
+      }
+
+      getUsuallyIncomes (request){
+        request.forEach(function(itemIncomes) {
+          itemIncomes.incomes.forEach(function(itemIncome){           
+            this.arrayIncomesLastMonths.push(itemIncome);
+          }, this);
+        }, this);
+        this.arrayIncomesLastMonths = this.removeDuplicates (this.arrayIncomesLastMonths, 'id');
+        this.arrayNewIncomes = this.arrayIncomesLastMonths;
+        this.arrayIncomes = request;
+      }
+
+      removeDuplicates (arrayIncomes, prop) {
+          return arrayIncomes.filter((obj, pos, arr) => {
+              return arr.map(mapObj => mapObj[prop]).indexOf(obj[prop]) === pos;
+          });
+      }
+
+      respuestaRecibida(e, request) {
+        console.log(request.response);
+      }
+
+      errorRecibido(e, error) {
+        console.log(error.request); //ese es el iron-request de la solicitud
+        this.mensaje = 'Error en la solicitud, con código ' + error.request.status;
+      }
+
     }
 
     window.customElements.define(IncomesView.is, IncomesView);

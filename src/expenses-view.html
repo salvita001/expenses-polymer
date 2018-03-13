@@ -17,70 +17,10 @@
         display: block;
         padding: 10px;
       }
-      paper-input {
-        max-width: 200px;
-      }
       .expenses-field{
         float: left;
         margin-left: 50px;
-      }
-      .resume-expenses-field{
-        float: left;
-      }
-      .summary-value{
-        display: block;
-        margin-bottom: 3px;
-      }
-      .summary-div{
-        margin-top: 20px;
-      }
-      .total-summary-month{
-        border-top: 1px solid rgb(163, 159, 159)
-      }
-      .last{
-        background-color: yellow;
-        display: block;
-        margin-top: 25px;
-        margin-bottom: 20px;
-      }
-      .button-save{
-        display: block;
-        width: 160px;
-        height: 40px;
-        margin: 10px auto auto;
-        cursor: pointer;
-        font-size: 15px;
-        color: #0d3069;
-        border-radius: 5px;
-      }
-      .spinner-container{
-        left: 44%;
-        top: 10px;
-        position: relative;
-      }
-      h4{
-        margin-bottom: 5px;
-      }
-      .warning-exist{
-        color: red;
-      }
-      .delete-input-expense{
-        float: right;
-        cursor: pointer;
-        top: -35px;
-        color: rgb(179, 67, 67);
-      }
-      .slot-class{
-        margin-right: 21px;
-      }
-      #expensesContainer{
-        width: 255px;
-      }
-      :root {
-          --paper-input-container: {
-              width: 248px;
-        }
-      }      
+      }            
     </style>
     <iron-ajax url="http://localhost:3000/expenses" 
       auto handle-as="json" 
@@ -104,13 +44,13 @@
       <div class="card expenses-field">
           <h3>Monthly Expenses</h3>
           <current-date id="currentdate"></current-date>
-          <div id="expensesContainer">
+          <div id="expensesContainer" class="introDatesContainer">
               <template is="dom-repeat" items="{{arrayExpensesLastMonths}}">
                 <paper-input auto-validate allowed-pattern="[0-9\,]" on-keypress="validate" type="text" 
                   id="{{item.id}}" label="{{item.id}}" maxlength="10" value="{{item.expense}}">
                   <div class="slot-class" slot="suffix">€/mes</div>
                 </paper-input>
-                <iron-icon class="delete-input-expense" id="icon-clear-{{item.id}}" title="clear" icon="icons:clear" on-click="deleteOrigExpense"></iron-icon>
+                <iron-icon class="delete-input" id="icon-clear-{{item.id}}" title="clear" icon="icons:clear" on-click="deleteOrigExpense"></iron-icon>
               </template>
           </div>
           <span on-click="deleteWarning" class="warning-exist" hidden$="[[alertExpense]]">The expense !!![[expenseRepeat]]!!! already exists..!!!</span>
@@ -121,7 +61,7 @@
               <div class="spinner-container"><paper-spinner alt="Saving expenses" active="[[cargando]]"></paper-spinner></div>
           </div>          
       </div>
-      <div class="card resume-expenses-field">
+      <div class="card resume-field">
           <h3>Last Months Expenses Summary</h3>
           <div class="summary-div">
             <template is="dom-repeat" items="[[arrayExpenses]]">
@@ -142,10 +82,7 @@
       
       static get properties() {
         return {
-          summaryCurrentMonth: {
-            type: String,
-            value: ''
-          },
+          summaryCurrentMonth: String,
           alertExpense:{
             type: Boolean,
             value: true
@@ -210,7 +147,7 @@
         this.inputCustom.setAttribute('value', this.newExpenseValue);
         this.inputCustom.addEventListener('blur', this.addNewValue.bind(this));
         //set iron attributes
-        this.ironDeleteSign.setAttribute('class', 'delete-input-expense');
+        this.ironDeleteSign.setAttribute('class', 'delete-input');
         this.ironDeleteSign.setAttribute('title', 'clear');
         this.ironDeleteSign.setAttribute('icon', 'icons:clear');
         this.ironDeleteSign.setAttribute('id', 'icon-clear-' + this.newExpenseLabel);
@@ -243,6 +180,7 @@
         }else{
           this.expenseRepeat = this.newExpenseLabel.toUpperCase();
           this.inputCustom.remove();
+          this.$.incomesContainer.querySelector('#icon-clear-' + expenseId).remove();
           this.alertExpense = !this.alertExpense;
         }
         this.summaryCurrentMonth = this.sumExpenses(); 
@@ -271,15 +209,6 @@
             return element.id !== nameId;
         });
         this.sumExpenses();
-      }
-
-      getValueInput (e){
-        let expenseId = e.currentTarget.id,
-            expenseValue = e.target.value;
-        this.$.expensesContainer.querySelector('#' + expenseId).setAttribute('value', expenseValue);
-        e.model.set('item.value', expenseValue);
-        e.model.set('item.value', expenseValue);
-        this.checkCurrentMonth(expenseId, expenseValue);       
       }
 
       sumExpenses (){
