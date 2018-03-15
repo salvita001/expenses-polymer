@@ -4,7 +4,11 @@
 <link rel="import" href="expenses-view.html">
 <link rel="import" href="incomes-view.html">
 <link rel="import" href="create-expense.html">
-<link rel="import" href = "/bower_components/google-chart/google-chart.html">
+<link rel="import" href="../bower_components/google-chart/google-chart.html">
+<link rel="import" href="../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../bower_components/web-animations-js/web-animations-next.min.html">
 
 <dom-module id="results-view">
   <template>
@@ -12,7 +16,53 @@
       :host {
         display: block;
       }
+      google-chart {
+        height: 400px;
+        width: 75%;
+        margin-top: 20px;
+        margin-left: 20px;
+      }
+      .selectContainer{
+        margin-left: 30px;
+      }
+      h1{
+        margin-top: 10px;
+      }
+      paper-dropdown-menu, paper-listbox {
+        width: 250px;
+      }
+      paper-input-container{
+        widows: 220px;
+      }
+      h3{
+        float: left;
+        margin-top: 27px;
+      }
+      paper-dropdown-menu {
+        margin-left: 45px;
+      }
     </style>
+    <iron-ajax url="http://localhost:3000/incomes" auto handle-as="json" method="GET" 
+      on-response="respuestaIncomesGet" on-error="errorRecibido"
+      last-response="{{ajaxResponse}}">
+    </iron-ajax>
+    <iron-ajax id="expensesCall" url="http://localhost:3000/expenses" auto handle-as="json" method="GET" 
+      on-response="respuestaExpensesGet" on-error="errorRecibido"
+      last-response="{{ajaxResponse}}">
+    </iron-ajax>
+    <h1>Graphics Results</h1>
+    <div class="selectContainer">
+      <h3>Select the month to compare: </h3>
+      <paper-dropdown-menu on-iron-select="changeSelectedValue" label="Select Month" slot="dropdown-content" class="dropdown-content">
+        <paper-listbox slot="dropdown-content" selected="{{numberMonths}}">
+            <template is="dom-repeat" items="{{incomesArray}}">
+              <paper-item>{{item.id}}</paper-item>
+            </template>
+        </paper-listbox>
+      </paper-dropdown-menu>
+    </div>
+    <google-chart type="pie" options="{{options}}" cols="{{cols}}" rows="{{rows}}">
+    </google-chart>
   </template>
 
   <script>
@@ -20,7 +70,55 @@
       static get is() { return 'results-view'; }
       static get properties() {
         return {
+          numberMonths:{
+            type: Number,
+            value: 0
+          } 
         }
+      }
+      ready() {
+        super.ready();
+      }
+      changeSelectedValue(e){
+        this.monthSelected = e.target.selectedItem.innerText;
+        this.generateData();
+      }
+      respuestaIncomesGet(e, request) {
+        console.log(request.response);
+        this.incomesArray = request.response;    
+      }
+      generateData(){
+        this.title = "Comparative month (" + this.monthSelected + "):";
+        this.options = {"title": this.title, "is3D": true, colors: ['#46d851', 'red']};
+        this.cols = [{"label":"Incomes", "type":"string"}, {"label":"Expenses", "type":"number"}];
+        this.rows = [["Incomes", this.totalSum(this.incomesArray)], ["Expenses", this.totalSum(this.expensesArray)]];
+      }
+      totalSum(arrayData){
+        let sumTotal = 0;
+        arrayData.forEach(function(data){
+          if(data.id.toLowerCase() === this.monthSelected.toLowerCase()){
+            if(data.expenses){
+              data.expenses.forEach(function(expense){
+                sumTotal = sumTotal + parseFloat(expense.expense.replace(/\,/g,'.'));
+              });            
+            }
+            if(data.incomes){
+              data.incomes.forEach(function(income){
+                sumTotal = sumTotal + parseFloat(income.income.replace(/\,/g,'.'));
+              });
+            }
+          }
+        }, this);
+        return sumTotal;
+      }
+      respuestaExpensesGet(e, request) {
+        console.log(request.response);
+        this.expensesArray = request.response;
+        this.generateData();
+      }
+      errorRecibido(e, error) {
+        console.log(error.request); //ese es el iron-request de la solicitud
+        this.mensaje = 'Error en la solicitud, con código ' + error.request.status;
       }
     }
 

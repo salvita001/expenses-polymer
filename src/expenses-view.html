@@ -150,7 +150,7 @@
         this.ironDeleteSign.setAttribute('class', 'delete-input');
         this.ironDeleteSign.setAttribute('title', 'clear');
         this.ironDeleteSign.setAttribute('icon', 'icons:clear');
-        this.ironDeleteSign.setAttribute('id', 'icon-clear-' + this.newExpenseLabel);
+        this.ironDeleteSign.setAttribute('id', 'icon-clear-add-' + this.newExpenseLabel);
         this.ironDeleteSign.addEventListener('click', this.deleteNewExpense.bind(this));
 
         this.$.expensesContainer.appendChild(this.inputCustom);
@@ -180,7 +180,7 @@
         }else{
           this.expenseRepeat = this.newExpenseLabel.toUpperCase();
           this.inputCustom.remove();
-          this.$.incomesContainer.querySelector('#icon-clear-' + expenseId).remove();
+          this.$.expensesContainer.querySelector('#icon-clear-add-' + expenseId).remove();
           this.alertExpense = !this.alertExpense;
         }
         this.summaryCurrentMonth = this.sumExpenses(); 

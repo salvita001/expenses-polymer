@@ -144,7 +144,7 @@
         this.ironDeleteSign.setAttribute('class', 'delete-input');
         this.ironDeleteSign.setAttribute('title', 'clear');
         this.ironDeleteSign.setAttribute('icon', 'icons:clear');
-        this.ironDeleteSign.setAttribute('id', 'icon-clear-' + this.newIncomeLabel);
+        this.ironDeleteSign.setAttribute('id', 'icon-clear-add-' + this.newIncomeLabel);
         this.ironDeleteSign.addEventListener('click', this.deleteNewIncome.bind(this));
 
         this.$.incomesContainer.appendChild(this.inputCustom);
@@ -208,7 +208,7 @@
         }else{
           this.incomeRepeat = this.newIncomeLabel.toUpperCase();
           this.inputCustom.remove();
-          this.$.incomesContainer.querySelector('#icon-clear-' + incomeId).remove();
+          this.$.incomesContainer.querySelector('#icon-clear-add-' + incomeId).remove();
           this.alertIncome = !this.alertIncome;
         }
         this.summaryTotalIncomes = this.sumIncomes(); 
